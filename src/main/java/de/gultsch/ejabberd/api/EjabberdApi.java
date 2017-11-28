@@ -11,6 +11,7 @@ import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import java.io.BufferedReader;
+import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
 import java.net.HttpURLConnection;
@@ -34,10 +35,6 @@ public class EjabberdApi {
         this("http://localhost:5280/api",null,null);
     }
 
-    public EjabberdApi(String endpoint) {
-        this(endpoint, null, null);
-    }
-
     public EjabberdApi(String endpoint, String username, String password) {
         try {
             this.endpoint = new URL(endpoint);
@@ -53,51 +50,60 @@ public class EjabberdApi {
         this.gsonBuilder = new GsonBuilder();
     }
 
+    public EjabberdApi(String endpoint) {
+        this(endpoint, null, null);
+    }
+
     public boolean execute(Request request) throws RequestFailedException {
         return this.execute(request, Integer.class) == 0;
     }
 
     public <T> T execute(Request request, Class<T> clazz) throws RequestFailedException {
-        Gson gson = this.gsonBuilder.create();
         try {
-            URL url = new URL(endpoint, MethodNameConverter.convert(request));
-            String output = gson.toJson(request);
-            HttpURLConnection connection = (HttpURLConnection) url.openConnection();
-            if (this.ignoreSllExceptions && connection instanceof HttpsURLConnection) {
-                HttpsURLConnection sslConnection = (HttpsURLConnection) connection;
-                try {
-                    SSLContext sslContext = SSLContext.getInstance("SSL");
-                    sslContext.init(null, new TrustManager[]{new TrustEverythingManager()}, new SecureRandom());
-                    sslConnection.setHostnameVerifier(new DisabledHostnameVerifier());
-                    sslConnection.setSSLSocketFactory(sslContext.getSocketFactory());
-                } catch (Exception e) {
-                    throw new RequestFailedException(e);
-                }
-            }
-            connection.setRequestMethod("POST");
-            if (this.username != null && this.password != null) {
-                String authorization = Base64.getEncoder().encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
-                connection.addRequestProperty("Authorization", "Basic " + authorization);
-            }
-            if (output != null) {
-                connection.setDoOutput(true);
-                OutputStreamWriter outputStream = new OutputStreamWriter(connection.getOutputStream());
-                outputStream.write(output);
-                outputStream.flush();
-                outputStream.close();
-            }
+            final Gson gson = this.gsonBuilder.create();
+            final String output = gson.toJson(request);
+            final HttpURLConnection connection = prepareConnection(request);
+            connection.setDoOutput(true);
+            OutputStreamWriter outputStream = new OutputStreamWriter(connection.getOutputStream());
+            outputStream.write(output);
+            outputStream.flush();
+            outputStream.close();
             int code = connection.getResponseCode();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(code == 200 ? connection.getInputStream() : connection.getErrorStream()));
             String result = bufferedReader.lines().collect(Collectors.joining("\n"));
             if (code == 200) {
-                return gson.fromJson(result,clazz);
+                return gson.fromJson(result, clazz);
             } else {
-                Generic error = gson.fromJson(result,Generic.class);
+                Generic error = gson.fromJson(result, Generic.class);
                 throw new RequestFailedException(error.getMessage(), error.getCode());
             }
+        } catch (RequestFailedException e) {
+            throw e;
         } catch (Throwable t) {
             throw new RequestFailedException(t);
         }
+    }
+
+    private HttpURLConnection prepareConnection(Request request) throws IOException, RequestFailedException {
+        final URL url = new URL(endpoint, MethodNameConverter.convert(request));
+        final HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+        if (this.ignoreSllExceptions && connection instanceof HttpsURLConnection) {
+            HttpsURLConnection sslConnection = (HttpsURLConnection) connection;
+            try {
+                SSLContext sslContext = SSLContext.getInstance("SSL");
+                sslContext.init(null, new TrustManager[]{new TrustEverythingManager()}, new SecureRandom());
+                sslConnection.setHostnameVerifier(new DisabledHostnameVerifier());
+                sslConnection.setSSLSocketFactory(sslContext.getSocketFactory());
+            } catch (Exception e) {
+                throw new RequestFailedException(e);
+            }
+        }
+        connection.setRequestMethod("POST");
+        if (this.username != null && this.password != null) {
+            String authorization = Base64.getEncoder().encodeToString((username + ":" + password).getBytes(StandardCharsets.UTF_8));
+            connection.addRequestProperty("Authorization", "Basic " + authorization);
+        }
+        return connection;
     }
 
     public void executeWithSuccessOrThrow(Request request) throws RequestFailedException {

@@ -1,15 +1,10 @@
 package de.gultsch.ejabberd.api.requests;
 
-import de.gultsch.ejabberd.api.Request;
-
-public class Register implements Request {
-    private final String user;
-    private final String host;
+public class Register extends UserHostRequest {
     private final String password;
 
-    public Register(String username, String host, String password) {
-        this.user = username;
-        this.host = host;
+    public Register(String user, String host, String password) {
+        super(user,host);
         this.password = password;
     }
 }
