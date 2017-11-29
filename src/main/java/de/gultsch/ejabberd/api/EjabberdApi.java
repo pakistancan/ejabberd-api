@@ -2,6 +2,7 @@ package de.gultsch.ejabberd.api;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import com.google.gson.JsonSyntaxException;
 import de.gultsch.ejabberd.api.results.Generic;
 import de.gultsch.ejabberd.api.utils.DisabledHostnameVerifier;
 import de.gultsch.ejabberd.api.utils.MethodNameConverter;
@@ -32,12 +33,12 @@ public class EjabberdApi {
     private boolean ignoreSllExceptions = false;
 
     public EjabberdApi() {
-        this("http://localhost:5280/api",null,null);
+        this("http://127.0.0.1:5280/api/", null, null);
     }
 
     public EjabberdApi(String endpoint, String username, String password) {
         try {
-            this.endpoint = new URL(endpoint);
+            this.endpoint = new URL(endpoint.endsWith("/") ? endpoint : endpoint + "/");
         } catch (MalformedURLException e) {
             throw new InvalidEndpointException("Not a valid endpoint", e);
         }
@@ -59,6 +60,7 @@ public class EjabberdApi {
     }
 
     public <T> T execute(Request request, Class<T> clazz) throws RequestFailedException {
+        String result = null;
         try {
             final Gson gson = this.gsonBuilder.create();
             final String output = gson.toJson(request);
@@ -70,13 +72,18 @@ public class EjabberdApi {
             outputStream.close();
             int code = connection.getResponseCode();
             BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(code == 200 ? connection.getInputStream() : connection.getErrorStream()));
-            String result = bufferedReader.lines().collect(Collectors.joining("\n"));
+            result = bufferedReader.lines().collect(Collectors.joining("\n"));
             if (code == 200) {
                 return gson.fromJson(result, clazz);
+            } else if (code == 404) {
+                throw new RequestFailedException(connection.getURL().toString() + " not found");
             } else {
                 Generic error = gson.fromJson(result, Generic.class);
                 throw new RequestFailedException(error.getMessage(), error.getCode());
             }
+        } catch (JsonSyntaxException e) {
+            final String firstLine = result == null ? "" : result.split("\n")[0];
+            throw new RequestFailedException("Unable to parse JSON starting with " + firstLine.substring(0, Math.min(firstLine.length(), 20)), e);
         } catch (RequestFailedException e) {
             throw e;
         } catch (Throwable t) {
@@ -107,7 +114,7 @@ public class EjabberdApi {
     }
 
     public void executeWithSuccessOrThrow(Request request) throws RequestFailedException {
-        String result = execute(request,String.class);
+        String result = execute(request, String.class);
         if ("Success".equals(result)) {
             throw new RequestFailedException(result);
         }
