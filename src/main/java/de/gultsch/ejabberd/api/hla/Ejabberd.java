@@ -4,6 +4,7 @@ import de.gultsch.ejabberd.api.EjabberdApi;
 import de.gultsch.ejabberd.api.Request;
 import de.gultsch.ejabberd.api.RequestFailedException;
 import de.gultsch.ejabberd.api.requests.*;
+import de.gultsch.ejabberd.api.results.Info;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -40,15 +41,43 @@ public class Ejabberd {
         api.executeWithSuccessOrThrow(new Register(username, host, password));
     }
 
+    public void unregister(String username, String host) throws RequestFailedException {
+        api.executeWithSuccessOrThrow(new Unregister(username,host));
+    }
+
     public boolean checkAccount(String username, String host) throws RequestFailedException {
         return api.execute(new CheckAccount(username, host));
     }
 
     public boolean checkPassword(String username, String host, String password) throws RequestFailedException {
-        return api.execute(new CheckPassword(username,host,password));
+        return api.execute(new CheckPassword(username, host, password));
     }
 
     public void changePassword(String username, String host, String newPassword) throws RequestFailedException {
-        api.executeWithSuccessOrThrow(new ChangePassword(username,host,newPassword));
+        api.executeWithSuccessOrThrow(new ChangePassword(username, host, newPassword));
+    }
+
+    public boolean createSharedRosterGroup(String host, String group, String name) throws RequestFailedException {
+        return api.execute(new SrgCreate(host, group, name));
+    }
+
+    public boolean deleteSharedRosterGroup(String host, String group) throws RequestFailedException {
+        return api.execute(new SrgDelete(host, group));
+    }
+
+    public Collection<Info> getSharedRosterGroupInfo(String host, String group) throws RequestFailedException {
+        return Arrays.asList(api.execute(new SrgGetInfo(host, group), Info[].class));
+    }
+
+    public boolean addUserToShareRosterGroup(String host, String group, String user, String grouphost) throws RequestFailedException {
+        return api.execute(new SrgUserAdd(host, group, user, grouphost));
+    }
+
+    public Collection<String> getUserResources(String username, String host) throws RequestFailedException {
+        return executeAndReturnAsStringCollection(new UserResources(username, host));
+    }
+
+    public boolean sendChatMessage(String from, String to, String subject, String body) throws RequestFailedException {
+        return api.execute(new SendMessage(from, to, subject, body));
     }
 }
