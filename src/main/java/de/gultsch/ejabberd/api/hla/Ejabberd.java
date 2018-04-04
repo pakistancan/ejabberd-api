@@ -80,4 +80,8 @@ public class Ejabberd {
     public boolean sendChatMessage(String from, String to, String subject, String body) throws RequestFailedException {
         return api.execute(new SendMessage(from, to, subject, body));
     }
+
+    public boolean reloadConfig() throws RequestFailedException {
+        return api.execute(new ReloadConfig());
+    }
 }
