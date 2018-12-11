@@ -5,6 +5,7 @@ import com.google.gson.GsonBuilder;
 import com.google.gson.JsonSyntaxException;
 import de.gultsch.ejabberd.api.results.Generic;
 import de.gultsch.ejabberd.api.utils.DisabledHostnameVerifier;
+import de.gultsch.ejabberd.api.utils.InstantDeserializer;
 import de.gultsch.ejabberd.api.utils.MethodNameConverter;
 import de.gultsch.ejabberd.api.utils.TrustEverythingManager;
 
@@ -20,6 +21,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.Base64;
 import java.util.stream.Collectors;
@@ -49,6 +51,7 @@ public class EjabberdApi {
         this.password = password;
 
         this.gsonBuilder = new GsonBuilder();
+        this.gsonBuilder.registerTypeAdapter(Instant.class, new InstantDeserializer());
     }
 
     public EjabberdApi(String endpoint) {

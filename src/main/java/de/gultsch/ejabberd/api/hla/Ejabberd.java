@@ -5,6 +5,7 @@ import de.gultsch.ejabberd.api.Request;
 import de.gultsch.ejabberd.api.RequestFailedException;
 import de.gultsch.ejabberd.api.requests.*;
 import de.gultsch.ejabberd.api.results.Info;
+import de.gultsch.ejabberd.api.results.Last;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -79,6 +80,10 @@ public class Ejabberd {
 
     public boolean sendChatMessage(String from, String to, String subject, String body) throws RequestFailedException {
         return api.execute(new SendMessage(from, to, subject, body));
+    }
+
+    public Last getLast(String username, String host) throws RequestFailedException {
+        return api.execute(new GetLast(username, host), Last.class);
     }
 
     public boolean reloadConfig() throws RequestFailedException {
