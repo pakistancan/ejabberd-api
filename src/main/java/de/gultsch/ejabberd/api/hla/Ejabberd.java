@@ -59,7 +59,7 @@ public class Ejabberd {
     }
     
     public boolean addRosterItem(String localUser, String localServer, String user, String server, String nick, String group, String subs) throws RequestFailedException{
-    	return api.execute(new AddRosterItem(localUser, localServer, user, server, nick, group, subs));
+    	return api.execute(new AddRosteritem(localUser, localServer, user, server, nick, group, subs));
     }
 
     public boolean createSharedRosterGroup(String host, String group, String name) throws RequestFailedException {

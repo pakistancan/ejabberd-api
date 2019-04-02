@@ -11,7 +11,7 @@ import de.gultsch.ejabberd.api.Request;
  * @author muhammadali
  *
  */
-public class AddRosterItem implements Request {
+public class AddRosteritem implements Request {
 
 	@SerializedName("localuser")
 	private String localUser;
@@ -33,7 +33,7 @@ public class AddRosterItem implements Request {
 	 * @param group
 	 * @param subs
 	 */
-	public AddRosterItem(String localUser, String localServer, String user,
+	public AddRosteritem(String localUser, String localServer, String user,
 			String server, String nick, String group, String subs) {
 		this.localUser = localUser;
 		this.localServer = localServer;
